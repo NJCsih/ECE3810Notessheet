@@ -1,0 +1,151 @@
+@document.meta
+title: 2024_04_25-FinalNotesSheet
+description: Notes sheet for ECE 3810 Final
+authors: Nelson Crane
+categories: Class Notes
+created: 2024-04-25T10:01:01-0700
+updated: 2024-04-30T16:26:29-0700
+version: 1.0.0
+@end
+
+* Ch 1
+  - $\text{[Speedup]} = \frac{\text{[Latency 1]}}{\text{[Latency 2]}} = \frac{\text{[Throughput 1]}}{\text{[Throughput 2]}}$
+  - $\text{[Performance Improvement]} = \text{[Speedup]} - 1$
+  - $\text{[Exec. Time]} = \text{[Instr. Count]} \times \text{[CPI]} \times \text{[Clock Speed]}$
+  - $\text{[Performance]} = \text{[Execution Time]}^{-1}$
+  - $\text{[Dynamic Power]} \propto \text{[Activity]} \times \text{[Capacitance]} \times \text{[Voltage]}^2 \times \text{[Frequency]}$
+
+* ASM
+  - Calle saves $s# registers, caller saves everything else
+  - Stack grows down
+  - TODO: Section on the mars .text
+  - TODO: Take excerpts from mars code as examples for saving/loading, logic, syscalls, etc -- Crossref with Garrat's Notes
+  @code ASM
+  .data
+  prompt:          .asciiz "Enter a string of size less than 80 characters: \n"
+  input:           .space 81
+  inputSize:       .word 80
+  exitMessage_p1:  .asciiz "Word count: "
+  .text
+  @end
+
+* Binary stuff
+** Converting in and out of float32 and float64
+   "But we're not dealing with real numbers, this is floating point baby!"
+   - Dec from Float: $(-1)^{\text{[Sign bit]}} \times (1 + \text{[Mantissa]}) \times 2^{(\text{[Exponent Bits] - \text{[Bias]}})}$
+   - Float from Dec: Convert to bin sci notation, 'sub \[the bias\] \[to get\] in' to floating exponent land
+   - TODO: Add examples
+   - Dec to F32: 
+   - Zero:     "00000000" exponent, all zero mantissa, sign as usual
+   - Inf:      "11111111" exponent, all zero mantissa, sign as usual
+   - NANs:     "11111111" exponent, sign and mantissa "left to implementer's discretion"
+   - Subnorms: "00000000" exponent, then replace the leading 1 with a zero and continue as usual. Getting increasingly smaller but less precise
+
+** Demorgans and Boolean algebra
+	- Xors are 1 if there's an even number of 1s, 0 if an even number. -- Thus 'Parity'
+   - $\lnot( A \lor B ) = \lnot( A ) \land \lnot( B )$
+   - $\lnot( A \land B ) = \lnot( A ) \lor \lnot( B )$
+   - You can flip the operation and flip weather they're internally or externally negated.
+
+* FSM stuff isn't that hard
+  - Just try to account for all states and wing it lol
+
+* Pipelining (oh god)
+** Usual steps of a 5 stage pipeline 
+   TODO with Garrett tomorrow
+   https://en.wikipedia.org/wiki/Classic_RISC_pipeline
+   - IF Instruction fetch -- 1 cycle, get next instruction from InstrMem or cache
+   - DR Data read from register
+   - AL ALU, does the computation
+   - DM Data memory: 
+   - RW Read Write
+** Bypassing
+   - For full cycle bypassing. You only have to 
+   - TODO Write where all the things consume and produce
+   - Point of production:
+   -- add, sub, etc: end of ALU
+   -- lw: end of DM -- the mem it's reading into register
+   - Point of consumption:
+   -- add, sub, lw: start of ALU
+   -- sw/lw $1, 8($2):
+   --- start of ALU for $2
+   --- start of DM for $1
+
+* Cache: 04_04
+
+  TODO: Replace code block with image, already in Figures/
+  @code text
+                index                 offset   offset
+                │                     ─────►   ─────►
+                ▼  way1 way2          way 1    way 2
+                  ┌────┬────┐        ┌────────┬────────┐
+  a set    ─►   a │tag │tag │        │block   │block   │
+                  ├────┼────┤        ├────────┼────────┤
+  a set    ─►   b │tag │tag │        │block   │block   │
+                  └────┴────┘        └────────┴────────┘
+  @end
+
+  - Offset and Index need the bits they need, tag gets the rest
+  -- Offset is for within the block
+  -- Index: which set we're referencing
+  - Tag array size = sets * ways * tagSize
+
+  - Offset = address % [block size in bytes]
+  - Index = (address / [block size in bytes]) % log_2(sets count)
+  - Tag = address / ([block size in bytes] * [log_2(sets count)])
+
+  - Tag bits: remaining bits
+  - Offset bits: depending on blocksize, determines what byte within the block is being referenced log_2(blocksize (B))
+  - Index bits: determined by amount of sets log_2(set count)
+  - Usually we write-allocate, briging a miss into cache. Read misses always bring block into cache
+  -- Usually we evict the least-recently used block
+
+  - Bit string: tag index offset
+
+* Spectre/Meltdown
+  "Spectre refers to a whole family of potential weaknesses of which meltdown is just one" - Computerphile video description
+  - These are the result of a combination of speculative execution and out of order execution
+  - Meltdown is a specific kernel memory exploit
+  - Need a: "lw $t1, 0(secret); lw $t2, $t1" series of two instructions to leave footprints in cache
+
+* Virtual memory:
+  - Memory virtualised by the kernel, the program thinks it has a single uninterrupted area to work with
+  - Programs have a pagetable, which is a list of how virtual pages are mapped to physical pages in memory
+  - Page table translations are mostly done via the Translation Lookaside Buffer, which falls back to the pagetable
+  - TODO: Address translation info? what's goin on in my notes with that
+  - TODO: What's going on with the one cycle delay note?
+
+* Multiprocessor design
+  - Each core has a cache, the LLC is shared
+  - TODO: Protocol descripions and examples of that chart
+** Cache Coherence Protocls
+   ~ Directory-based: A single location (directory) keeps track of the sharing status of a block of memory
+   ~ Snooping: Every cache block is accompanied by the sharing status of that block - all cache controllers monitor the shared bus so they can update the sharing status of the block, if necessary
+   - Write invalidate: a processor gains exclusive access of a block before writing by invalidating all other copies
+   - Write-update: when a process or writes, it updates other shared copies of that block~
+** Locks
+   - Atomic exchange: simulatneous load and store operation, locks memory at the same moment it reads. -- locks it while it transfers into register
+** MP exmaple:
+   - TODO: insert image of the shared bus read write exmaple image Figures/MultiprocessorMemoryExmaple.png
+
+* Basic structure of a GPU:
+  - many Single Instruction Multiple Thread cores, each with several warps and a warp scheduler. -- large cache
+  - Very quick to abandon the current project if it stalls and start work on the next -- minimal downtime, easy to context switch
+  - Each SIMT core has priavate L1 cache, large L2 shared by all cores. Each L2 bank services a subset of addresses
+  - The 
+* Disk stuff:
+  - 1-12 platters (glass disks), 5-30k tracks (rings), 100-500 sectors, ~512B/sector (circle around a track)
+  - Arm moving to correct track => seek time, ~5-12ms, maybe less
+  - Rotational latency: time to rotate sector under head, usually ~2ms
+  - Transfer time: time taken to transfer a block of bits out of disk, usually 3-65 MB/s
+  - Disk controller: maintains disk cache, sets up transfers.
+  - Mean time to Failure/Restore:
+  -- Reliability $\rightwhitearrow$ MTTF
+  -- Availability: fraction of time service matches specs, MTTF / (MTTF + MTTR)
+* Raid types overview:
+  - Raid 0: No redundancy, stripes disks across drives to improve parallelism. 
+  - Raid 1: Mirrors all disks, can sometimes increase read speed, highly redundant
+  - Raid 2: bit level striping, requires lockstep drives. Lots of parity drives
+  - Raid 3: byte level striping with dedicated parity disk. Highest sequential read speeds. Usually requires lockstep drives.
+  - Raid 4 and 5: block level striping, 4 has a dedicated parity disk, 5 distributes parity sections among drives.
+  - Raid 6: Same as raid 5, but has two parity blocks per stripe, again distributed among drives. Can work even after two drive failures. Technically raid 6 can have an arbitrary number of parity blocks added for increased redundancy.
