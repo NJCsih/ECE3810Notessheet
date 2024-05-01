@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Nelson Crane
-% April 25, 2024
-% Midterm Notes for ECE 3810
+% April 30, 2024
+% Notes Sheet for ECE 3810 Final
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Lachaise Assignment
 % LaTeX Template
@@ -126,17 +126,14 @@ Not that hard, just like, make sure all states and lines can be justified and ar
 	\subitem Offset is for within the block
 	\subitem Index: which set we're referencing
 	\item Tag array size = sets * ways * tagSize
-	\item
-	\item Offset = address % [block size in bytes]
-	\item Index = (address / [block size in bytes]) % log_2(sets count)
-	\item Tag = address / ([block size in bytes] * [log_2(sets count)])
-	\item
+	\item $\text{[Offset]} = \text{address} \% \text{[block size in bytes]}$
+	\item $\text{[Index]} = (\text{address} / \text{[block size in bytes]}) \% \log_2(\text{Sets Count})$
+	\item $\text{[Tag]} = \text{address} / (\text{[block size in bytes]} * \log_2(\text{[Sets Count]}))$
 	\item Tag bits: remaining bits
 	\item Offset bits: depending on blocksize, determines what byte within the block is being referenced log_2(blocksize (B))
 	\item Index bits: determined by amount of sets log_2(set count)
 	\item Usually we write-allocate, briging a miss into cache. Read misses always bring block into cache
 	\subitem Usually we evict the least-recently used block
-	\item
 	\item Bit string: tag index offset
 \end{itemize}
 
@@ -186,23 +183,23 @@ Not that hard, just like, make sure all states and lines can be justified and ar
 
 \section{Basic structure of a GPU:}
 \begin{itemize}
-  - many Single Instruction Multiple Thread cores, each with several warps and a warp scheduler. -- large cache
-  - Very quick to abandon the current project if it stalls and start work on the next -- minimal downtime, easy to context switch
-  - Each SIMT core has priavate L1 cache, large L2 shared by all cores. Each L2 bank services a subset of addresses
-  - The 
+	\item many Single Instruction Multiple Thread cores, each with several warps and a warp scheduler. -- large cache
+	\item Very quick to abandon the current project if it stalls and start work on the next -- minimal downtime, easy to context switch
+	\item Each SIMT core has priavate L1 cache, large L2 shared by all cores. Each L2 bank services a subset of addresses
+	\item The 
 \end{itemize}
 
 
 \section{Disk stuff:}
 \begin{itemize}
 	\item 1-12 platters (glass disks), 5-30k tracks (rings), 100-500 sectors, ~512B/sector (circle around a track)
-	\item Arm moving to correct track => seek time, ~5-12ms, maybe less
+	\item Arm moving to correct track $\Rightarrow$ seek time, ~5-12ms, maybe less
 	\item Rotational latency: time to rotate sector under head, usually ~2ms
 	\item Transfer time: time taken to transfer a block of bits out of disk, usually 3-65 MB/s
 	\item Disk controller: maintains disk cache, sets up transfers.
-	\item Mean time to Failure/Restore:
-	\item- Reliability $\rightwhitearrow$ MTTF
-	\item- Availability: fraction of time service matches specs, MTTF / (MTTF + MTTR)
+	\item Mean time to Failure/Restore
+	\subitem Reliability $\rightwhitearrow$ MTTF
+	\subitem Availability: fraction of time service matches specs, MTTF / (MTTF + MTTR)
 \end{itemize}
 
 
